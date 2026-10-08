@@ -23,6 +23,9 @@ public class FavoritoService {
         favorito.setProductoId(dto.productoId());
         favorito.setNotaPersonal(dto.notaPersonal());
         
+        // --- AGREGADO PARA EL TP2 ---
+        favorito.setListaId(dto.listaId());
+        
         Favorito guardado = repository.save(favorito);
         return mapearADto(guardado);
     }
@@ -46,6 +49,9 @@ public class FavoritoService {
         favorito.setProductoId(dto.productoId());
         favorito.setNotaPersonal(dto.notaPersonal());
         
+        // --- AGREGADO PARA EL TP2 ---
+        favorito.setListaId(dto.listaId());
+        
         Favorito actualizado = repository.save(favorito);
         return mapearADto(actualizado);
     }
@@ -63,7 +69,8 @@ public class FavoritoService {
                 f.getId(), 
                 f.getProductoId(), 
                 f.getNotaPersonal(), 
-                f.getFechaCreacion()
+                f.getFechaCreacion(),
+                f.getListaId() // --- AGREGADO PARA EL TP2 ---
         );
     }
 }

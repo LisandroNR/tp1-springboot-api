@@ -2,6 +2,7 @@ package com.example.demo.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -55,5 +56,15 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR, "Ocurrió un error inesperado");
         problema.setTitle("Error interno");
         return problema;
+    }
+
+    @ExceptionHandler(ListaConFavoritosException.class)
+    public ResponseEntity<org.springframework.http.ProblemDetail> handleListaConFavoritos(ListaConFavoritosException ex) {
+        org.springframework.http.ProblemDetail problemDetail = org.springframework.http.ProblemDetail.forStatusAndDetail(
+                org.springframework.http.HttpStatus.CONFLICT, 
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Conflicto de integridad");
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT).body(problemDetail);
     }
 }

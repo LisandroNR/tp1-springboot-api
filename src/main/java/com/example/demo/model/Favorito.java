@@ -7,6 +7,7 @@ public class Favorito {
     private Long productoId;
     private String notaPersonal;
     private LocalDateTime fechaCreacion;
+    private Integer listaId; // <-- Agregamos el ID de la lista
 
     public Favorito() {
         this.fechaCreacion = LocalDateTime.now();
@@ -23,4 +24,7 @@ public class Favorito {
     
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
+
+    public Integer getListaId() { return listaId; }
+    public void setListaId(Integer listaId) { this.listaId = listaId; }
 }
