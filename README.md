@@ -37,12 +37,12 @@ En el endpoint encargado de mover los favoritos de una lista a otra y eliminar l
 
 - Éxito al crear favorito (201 Created):
 
-  ![Crear Favorito](evidencias/captura-201.png)
+  ![Crear Favorito](evidencia/captura-201.png)
 
 - Error 409 al borrar lista con favoritos:
 
-  ![Error 409](evidencias/captura-409.png)
+  ![Error 409](evidencia/captura-409.png)
 
 - Éxito al mover favoritos y borrar lista (204 No Content):
 
-  ![Mover y Borrar](evidencias/captura-204.png)
+  ![Mover y Borrar](evidencia/captura-204.png)
