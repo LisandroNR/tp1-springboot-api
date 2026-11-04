@@ -2,7 +2,6 @@ package com.example.demo.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
-import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -16,11 +15,6 @@ import java.util.Map;
  * controller arme su propio JSON de error, cualquier excepción que llegue
  * hasta acá se traduce a un mismo formato (ProblemDetail, RFC 7807):
  * { "status", "title", "detail", ... }.
- *
- * Cuando se implemente el controller de favoritos en clase, no hace falta
- * tocar esta clase: alcanza con que FavoritoService lance
- * RecursoNoEncontradoException o que el DTO de entrada tenga anotaciones
- * de Bean Validation para que estos mismos handlers respondan.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -50,21 +44,42 @@ public class GlobalExceptionHandler {
         return problema;
     }
 
+    @ExceptionHandler(ListaConFavoritosException.class)
+    public ProblemDetail handleListaConFavoritos(ListaConFavoritosException ex) {
+        ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problema.setTitle("Conflicto de integridad");
+        return problema;
+    }
+
+    // --- TP3: seguridad ---
+
+    @ExceptionHandler(CredencialesInvalidasException.class)
+    public ProblemDetail handleCredencialesInvalidas(CredencialesInvalidasException ex) {
+        ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        problema.setTitle("Credenciales inválidas");
+        return problema;
+    }
+
+    @ExceptionHandler(AccesoDenegadoException.class)
+    public ProblemDetail handleAccesoDenegado(AccesoDenegadoException ex) {
+        ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        problema.setTitle("Acceso denegado");
+        return problema;
+    }
+
+    @ExceptionHandler(EmailYaExisteException.class)
+    public ProblemDetail handleEmailYaExiste(EmailYaExisteException ex) {
+        ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problema.setTitle("Email ya registrado");
+        return problema;
+    }
+
+    // Debe quedar al final: es el comodín para cualquier error no previsto.
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGenerico(Exception ex) {
         ProblemDetail problema = ProblemDetail.forStatusAndDetail(
                 HttpStatus.INTERNAL_SERVER_ERROR, "Ocurrió un error inesperado");
         problema.setTitle("Error interno");
         return problema;
-    }
-
-    @ExceptionHandler(ListaConFavoritosException.class)
-    public ResponseEntity<org.springframework.http.ProblemDetail> handleListaConFavoritos(ListaConFavoritosException ex) {
-        org.springframework.http.ProblemDetail problemDetail = org.springframework.http.ProblemDetail.forStatusAndDetail(
-                org.springframework.http.HttpStatus.CONFLICT, 
-                ex.getMessage()
-        );
-        problemDetail.setTitle("Conflicto de integridad");
-        return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT).body(problemDetail);
     }
 }

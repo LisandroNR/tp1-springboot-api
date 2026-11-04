@@ -1,5 +1,6 @@
 package com.example.demo.persistencia;
 
+import com.example.demo.model.UsuarioEntity;
 import jakarta.persistence.*;
 
 @Entity
@@ -12,6 +13,10 @@ public class ListaEntity {
 
     private String nombre;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id")
+    private UsuarioEntity usuario;
+
     public ListaEntity() {}
 
     public Integer getId() { return id; }
@@ -19,4 +24,7 @@ public class ListaEntity {
 
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
+
+    public UsuarioEntity getUsuario() { return usuario; }
+    public void setUsuario(UsuarioEntity usuario) { this.usuario = usuario; }
 }

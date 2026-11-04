@@ -3,13 +3,17 @@ package com.example.demo.service;
 import com.example.demo.model.Lista;
 import com.example.demo.repository.FavoritoRepository;
 import com.example.demo.repository.ListaRepository;
+import com.example.demo.exception.AccesoDenegadoException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ListaService {
@@ -22,56 +26,90 @@ public class ListaService {
         this.favoritoRepository = favoritoRepository;
     }
 
+    // --- MÉTODOS AUXILIARES DE SEGURIDAD ---
+    private Long getUsuarioAutenticadoId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        // El JwtAuthenticationFilter guardó el ID acá
+        return (Long) auth.getDetails(); 
+    }
+
+    private boolean isUsuarioAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    }
+
+    private void validarPropietario(Lista lista) {
+        if (isUsuarioAdmin()) return; // El admin puede hacer todo
+        
+        Long usuarioId = getUsuarioAutenticadoId();
+        if (!usuarioId.equals(lista.getUsuarioId())) {
+            throw new AccesoDenegadoException("No tenés permiso para operar sobre esta lista");
+        }
+    }
+    // ---------------------------------------
+
     public Lista crearLista(Lista lista) {
+        // Ignoramos lo que venga en el body y forzamos el dueño
+        lista.setUsuarioId(getUsuarioAutenticadoId());
         return listaRepository.save(lista);
     }
 
     public List<Lista> obtenerTodas() {
-        return listaRepository.findAll();
+        List<Lista> todas = listaRepository.findAll();
+        
+        if (isUsuarioAdmin()) {
+            return todas; // Si es admin, devuelve todas las listas de la base de datos
+        }
+        
+        // Si es un usuario común, filtramos y devolvemos solo las suyas
+        Long usuarioId = getUsuarioAutenticadoId();
+        return todas.stream()
+                .filter(lista -> usuarioId.equals(lista.getUsuarioId()))
+                .collect(Collectors.toList());
     }
 
     public Optional<Lista> obtenerPorId(Integer id) {
-        return listaRepository.findById(id);
+        Optional<Lista> listaOpt = listaRepository.findById(id);
+        if (listaOpt.isPresent()) {
+            validarPropietario(listaOpt.get());
+        }
+        return listaOpt;
     }
 
     public void eliminarLista(Integer id) {
-        // 1. Validamos si la lista existe
-        if (listaRepository.findById(id).isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "La lista no existe");
-        }
+        Lista lista = listaRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "La lista no existe"));
 
-        // 2. Buscamos los favoritos. Si la lista devuelta tiene al menos 1 elemento, tiramos el 409
+        validarPropietario(lista);
+
         List<com.example.demo.model.Favorito> favoritos = favoritoRepository.buscarPorLista(id);
         if (favoritos != null && !favoritos.isEmpty()) {
-            // --- ACÁ USAMOS LA NUEVA EXCEPCIÓN ---
             throw new com.example.demo.exception.ListaConFavoritosException("No se puede eliminar una lista que contiene favoritos");
         }
 
-        // 3. Si pasó las dos validaciones de arriba, borramos tranquilo
         listaRepository.deleteById(id);
     }
 
-    // --- Punto 7: Transacciones ---
     @Transactional
     public void moverFavoritosYBorrarLista(Integer origenId, Integer destinoId) {
-        // 1. Validamos que ambas listas existan
-        if (listaRepository.findById(origenId).isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "La lista de origen no existe");
-        }
-        if (listaRepository.findById(destinoId).isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "La lista de destino no existe");
-        }
+        Lista listaOrigen = listaRepository.findById(origenId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "La lista de origen no existe"));
+        
+        Lista listaDestino = listaRepository.findById(destinoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "La lista de destino no existe"));
 
-        // 2. Buscamos todos los favoritos de la lista origen
+        // Verificamos que sea dueño de ambas listas involucradas
+        validarPropietario(listaOrigen);
+        validarPropietario(listaDestino);
+
         List<com.example.demo.model.Favorito> favoritosAMover = favoritoRepository.buscarPorLista(origenId);
 
-        // 3. Movemos los favoritos uno por uno a la lista destino
         for (com.example.demo.model.Favorito fav : favoritosAMover) {
             fav.setListaId(destinoId);
             favoritoRepository.save(fav);
         }
 
-        // 4. Eliminamos la lista de origen (ahora que está vacía, no tira error 409)
         listaRepository.deleteById(origenId);
     }
 }
