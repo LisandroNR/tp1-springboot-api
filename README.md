@@ -46,3 +46,43 @@ En el endpoint encargado de mover los favoritos de una lista a otra y eliminar l
 - Éxito al mover favoritos y borrar lista (204 No Content):
 
   ![Mover y Borrar](evidencia/captura-204.png)
+
+  ## 🧪 Cómo correr los tests
+
+Requisito: Docker Desktop abierto (Testcontainers levanta un PostgreSQL real).
+
+```bash
+./mvnw test      # solo unitarias (*Test, Surefire)
+./mvnw verify    # unitarias + integración (*IT, Failsafe con Testcontainers)
+```
+
+Las pruebas de integración corren las migraciones de Flyway (V1 a V6) contra una base limpia en cada ejecución.
+
+## ⚙️ Integración continua (GitHub Actions)
+
+El workflow `.github/workflows/ci.yml` se ejecuta en cada `push`: compila el proyecto y corre `./mvnw verify`.
+
+Cómo leer el resultado: pestaña **Actions** del repositorio → elegir la corrida.
+
+- ✅ Verde: pasaron las pruebas unitarias y de integración.
+- ❌ Rojo: abrir el job `build` y el paso con la cruz para ver qué test falló.
+
+Corrida exitosa: [LINK_A_LA_CORRIDA_VERDE](https://github.com/LisandroNR/tp1-springboot-api/actions/runs/41960576098)
+
+## 🚀 Despliegue en Render
+
+URL pública: https://tp1-springboot-api.onrender.com
+
+1. Crear una base PostgreSQL en Render (plan Free).
+2. Crear un Web Service desde este repositorio, rama `entrega-tp3`, runtime Docker (usa el `Dockerfile` de la raíz).
+3. Cargar las variables de entorno: `DB_URL` (formato `jdbc:postgresql://HOST:5432/BASE`), `DB_USER`, `DB_PASSWORD` y `JWT_SECRET`.
+4. Configurar el Health Check Path en `/health`.
+5. Verificar en los logs que Flyway aplicó las 6 migraciones y que la app arrancó sin errores.
+
+Verificación: `GET /health` responde `{"status":"ok","service":"demo"}`; `GET /api/listas` devuelve 401 sin token y 200 con un token válido.
+
+## 🔒 Decisiones de Seguridad (Autorización)
+
+La validación para que un usuario solo pueda operar sobre sus propios recursos vive en la capa de **Servicio** (`ListaServiceImpl`), y no en el Controller ni en anotaciones.
+
+**Justificación:** el Controller solo se encarga de rutear las peticiones HTTP; determinar si una lista pertenece al usuario autenticado o si este tiene rol `ADMIN` es lógica de negocio. Si el servicio se invocara desde otro origen distinto de HTTP, la regla no se podría saltear por accidente.
