@@ -4,6 +4,9 @@ import com.example.demo.dto.FavoritoRequestDTO;
 import com.example.demo.dto.FavoritoResponseDTO;
 import com.example.demo.service.FavoritoService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -14,7 +17,9 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/favoritos")
-@Tag(name = "Favoritos", description = "Operaciones CRUD para los productos favoritos")
+@Tag(name = "Favoritos",
+        description = "Operaciones CRUD para los productos favoritos. Requiere autenticación (Bearer JWT).")
+@SecurityRequirement(name = "bearerAuth")
 public class FavoritoController {
 
     private final FavoritoService favoritoService;
@@ -24,32 +29,57 @@ public class FavoritoController {
     }
 
     @PostMapping
-    @Operation(summary = "Crear un nuevo favorito")
+    @Operation(summary = "Crear un nuevo favorito", description = "Requiere autenticación.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Favorito creado"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos"),
+            @ApiResponse(responseCode = "401", description = "Token ausente, inválido o vencido")
+    })
     public ResponseEntity<FavoritoResponseDTO> crear(@Valid @RequestBody FavoritoRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(favoritoService.crear(dto));
     }
 
     @GetMapping
-    @Operation(summary = "Listar todos los favoritos")
+    @Operation(summary = "Listar todos los favoritos", description = "Requiere autenticación.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Listado de favoritos"),
+            @ApiResponse(responseCode = "401", description = "Token ausente, inválido o vencido")
+    })
     public List<FavoritoResponseDTO> listar() {
         return favoritoService.listarTodos();
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener un favorito por ID")
+    @Operation(summary = "Obtener un favorito por ID", description = "Requiere autenticación.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Favorito encontrado"),
+            @ApiResponse(responseCode = "401", description = "Token ausente, inválido o vencido"),
+            @ApiResponse(responseCode = "404", description = "El favorito no existe")
+    })
     public FavoritoResponseDTO obtenerPorId(@PathVariable Long id) {
         return favoritoService.obtenerPorId(id);
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Actualizar un favorito existente")
+    @Operation(summary = "Actualizar un favorito existente", description = "Requiere autenticación.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Favorito actualizado"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos"),
+            @ApiResponse(responseCode = "401", description = "Token ausente, inválido o vencido"),
+            @ApiResponse(responseCode = "404", description = "El favorito no existe")
+    })
     public FavoritoResponseDTO actualizar(@PathVariable Long id, @Valid @RequestBody FavoritoRequestDTO dto) {
         return favoritoService.actualizar(id, dto);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Eliminar un favorito")
+    @Operation(summary = "Eliminar un favorito", description = "Requiere autenticación.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Favorito eliminado"),
+            @ApiResponse(responseCode = "401", description = "Token ausente, inválido o vencido"),
+            @ApiResponse(responseCode = "404", description = "El favorito no existe")
+    })
     public void eliminar(@PathVariable Long id) {
         favoritoService.eliminar(id);
     }
