@@ -108,7 +108,7 @@ class ListaControllerIT {
     @Test
     void obtenerListas_sinToken_devuelve401() throws Exception {
         mockMvc.perform(get("/api/listas"))
-                .andExpect(status().isOk()); // TEST ROTO A PROPOSITO: debe ser isUnauthorized()
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
