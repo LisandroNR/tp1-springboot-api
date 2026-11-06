@@ -65,42 +65,42 @@ La validación para que un usuario solo pueda operar sobre sus propios recursos 
 ### Despliegue en Render
 - Migraciones aplicadas en la base remota (Flyway, versión v6):
 
-  ![Migraciones](evidencia/WhatsApp_Image_2026-11-04_at_22_30_58_1.jpeg)
+  ![Migraciones](evidencia/migraciones.jpeg)
 
 - Aplicación arrancada y servicio en línea:
 
-  ![Arranque](evidencia/WhatsApp_Image_2026-11-04_at_22_34_00_1.jpeg)
+  ![Arranque](evidencia/arranque.jpeg)
 
 - `GET /health` desde la URL pública:
 
-  ![Health](evidencia/WhatsApp_Image_2026-11-04_at_22_37_24_1.jpeg)
+  ![Health](evidencia/health.jpeg)
 
 ### Autenticación y autorización (URL pública)
 - Registro de usuario (201 Created):
 
-  ![Registro](evidencia/WhatsApp_Image_2026-11-04_at_22_45_47_1.jpeg)
+  ![Registro](evidencia/registro.jpeg)
 
 - Login con credenciales válidas (200 con token):
 
-  ![Login](evidencia/WhatsApp_Image_2026-11-04_at_22_47_11_1.jpeg)
+  ![Login](evidencia/login.jpeg)
 
 - `/api/listas` sin token (401), desde Swagger y desde curl:
 
-  ![401 Swagger](evidencia/WhatsApp_Image_2026-11-04_at_22_44_34_1.jpeg)
-  ![401 curl](evidencia/WhatsApp_Image_2026-11-04_at_22_55_26_1.jpeg)
+  ![401 Swagger](evidencia/401-swagger.jpeg)
+  ![401 curl](evidencia/401-curl.jpeg)
 
 - `/api/listas` con token válido (200):
 
-  ![200 con token](evidencia/WhatsApp_Image_2026-11-04_at_22_54_49_1.jpeg)
+  ![200 con token](evidencia/200-con-token.jpeg)
 
 ### Integración continua
 - CI en rojo (test roto a propósito):
 
-  ![CI rojo](evidencia/WhatsApp_Image_2026-11-05_at_00_41_04.jpeg)
+  ![CI rojo](evidencia/ci-rojo.jpeg)
 
 - CI en verde tras el arreglo:
 
-  ![CI verde](evidencia/WhatsApp_Image_2026-11-05_at_00_43_36.jpeg)
+  ![CI verde](evidencia/ci-verde.jpeg)
 
 ## 📝 Decisiones de diseño del TP2
 
