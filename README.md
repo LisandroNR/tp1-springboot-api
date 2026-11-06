@@ -1,53 +1,28 @@
-# TP2 · Persistencia, migraciones y arquitectura hexagonal
+# TP3 · Seguridad, pruebas e integración continua
 
-Repositorio correspondiente al Trabajo Práctico Nº 2 de la materia Desarrollo de Aplicaciones Web II (Universidad Nacional de Villa Mercedes).
+Repositorio de la materia Desarrollo de Aplicaciones Web II (Universidad Nacional de Villa Mercedes). Este trabajo continúa el TP2 (persistencia, migraciones y arquitectura hexagonal) y le suma autenticación con JWT, autorización por propietario y rol, pruebas automatizadas, CI y despliegue.
+
+- **URL pública:** https://tp1-springboot-api.onrender.com
+- **Swagger:** https://tp1-springboot-api.onrender.com/swagger-ui.html
+- Nota: el plan gratuito de Render "duerme" por inactividad; la primera petición puede tardar cerca de un minuto.
 
 ## 🚀 Cómo levantar la base de datos y la aplicación
 
-1. **Base de datos (PostgreSQL):**
-   Asegurate de tener Docker instalado y ejecutá el siguiente comando en la raíz del proyecto para levantar la instancia de PostgreSQL:
+1. **Base de datos (PostgreSQL):** con Docker instalado, en la raíz del proyecto:
 ```bash
-   docker-compose up -d
+docker-compose up -d
 ```
 
-2. **Migraciones (Flyway):**
-   Las migraciones de la base de datos se ejecutan de manera automática al iniciar la aplicación mediante Flyway.
+2. **Migraciones (Flyway):** se ejecutan automáticamente al iniciar la aplicación.
 
 3. **Ejecutar la aplicación:**
-   Podés correr el proyecto desde tu IDE favorito o a través de Maven:
 ```bash
-   mvn spring-boot:run
+mvn spring-boot:run
 ```
 
-## 📝 Justificaciones Teóricas y Decisiones de Diseño (Consignas del TP)
+Las credenciales de base y el secreto JWT se leen de variables de entorno (`DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`) con valores por defecto para desarrollo local.
 
-### 1. Puertos y Adaptadores (Por qué el Service/Controller no se tocaron)
-
-Durante la migración de memoria a base de datos, solo se modificaron las clases de infraestructura (como los repositorios JPA y las Entities) y se creó un nuevo `FavoritoRepositoryAdapter`. Las clases de dominio, el `FavoritoService` y el `FavoritoController` no sufrieron cambios en sus lógicas principales (salvo la adición del campo `listaId` requerido). Esto fue posible gracias a la Arquitectura Hexagonal: nuestro Service depende de un Puerto (la interfaz `FavoritoRepository`) y no de una tecnología específica. Al cambiar la implementación en memoria por PostgreSQL, simplemente conectamos un nuevo Adapter detrás de esa misma interfaz, manteniendo el núcleo completamente desacoplado de la infraestructura.
-
-### 2. Evolución del Esquema (Por qué no se edita V1 o V2)
-
-Para evolucionar el esquema de la base de datos (por ejemplo, hacer que `lista_id` sea obligatorio en los Favoritos antiguos), se creó una nueva migración `V4__lista_id_obligatorio.sql` en lugar de editar las migraciones V1, V2 o V3 ya aplicadas. Esto se debe a que Flyway lleva un registro estricto de las versiones en la tabla `flyway_schema_history`. Si se modificara un archivo ya aplicado, Flyway detectaría un conflicto en el checksum (la firma del archivo) y bloquearía el arranque de la aplicación por seguridad, garantizando de este modo la inmutabilidad y la consistencia del esquema en todos los entornos.
-
-### 3. Transacciones y Propiedades ACID
-
-En el endpoint encargado de mover los favoritos de una lista a otra y eliminar la lista de origen (`POST /api/listas/{origenId}/mover-favoritos`), se utilizó la anotación `@Transactional`. Si se quitara esta anotación y ocurriera un fallo a mitad de camino (por ejemplo, los favoritos se reasignan con éxito a la nueva lista, pero ocurre un error al intentar borrar la lista original), la base de datos quedaría en un estado inconsistente. El uso de transacciones garantiza la Atomicidad (la 'A' de ACID): o se ejecutan todas las operaciones de escritura correctamente, o se revierte todo el bloque (rollback) de forma segura.
-
-## 📸 Evidencias de Pruebas (Swagger)
-
-- Éxito al crear favorito (201 Created):
-
-  ![Crear Favorito](evidencia/captura-201.png)
-
-- Error 409 al borrar lista con favoritos:
-
-  ![Error 409](evidencia/captura-409.png)
-
-- Éxito al mover favoritos y borrar lista (204 No Content):
-
-  ![Mover y Borrar](evidencia/captura-204.png)
-
-  ## 🧪 Cómo correr los tests
+## 🧪 Cómo correr los tests
 
 Requisito: Docker Desktop abierto (Testcontainers levanta un PostgreSQL real).
 
@@ -67,11 +42,9 @@ Cómo leer el resultado: pestaña **Actions** del repositorio → elegir la corr
 - ✅ Verde: pasaron las pruebas unitarias y de integración.
 - ❌ Rojo: abrir el job `build` y el paso con la cruz para ver qué test falló.
 
-Corrida exitosa: [LINK_A_LA_CORRIDA_VERDE](https://github.com/LisandroNR/tp1-springboot-api/actions/runs/41960576098)
+Corrida exitosa: [ver corrida verde en Actions](https://github.com/LisandroNR/tp1-springboot-api/actions/runs/41963219982)
 
 ## 🚀 Despliegue en Render
-
-URL pública: https://tp1-springboot-api.onrender.com
 
 1. Crear una base PostgreSQL en Render (plan Free).
 2. Crear un Web Service desde este repositorio, rama `entrega-tp3`, runtime Docker (usa el `Dockerfile` de la raíz).
@@ -83,6 +56,76 @@ Verificación: `GET /health` responde `{"status":"ok","service":"demo"}`; `GET /
 
 ## 🔒 Decisiones de Seguridad (Autorización)
 
-La validación para que un usuario solo pueda operar sobre sus propios recursos vive en la capa de **Servicio** (`ListaServiceImpl`), y no en el Controller ni en anotaciones.
+La validación para que un usuario solo pueda operar sobre sus propios recursos vive en la capa de **Servicio** (`ListaService`), y no en el Controller ni en anotaciones.
 
 **Justificación:** el Controller solo se encarga de rutear las peticiones HTTP; determinar si una lista pertenece al usuario autenticado o si este tiene rol `ADMIN` es lógica de negocio. Si el servicio se invocara desde otro origen distinto de HTTP, la regla no se podría saltear por accidente.
+
+## 📸 Evidencias del TP3
+
+### Despliegue en Render
+- Migraciones aplicadas en la base remota (Flyway, versión v6):
+
+  ![Migraciones](evidencia/WhatsApp_Image_2026-11-04_at_22_30_58_1.jpeg)
+
+- Aplicación arrancada y servicio en línea:
+
+  ![Arranque](evidencia/WhatsApp_Image_2026-11-04_at_22_34_00_1.jpeg)
+
+- `GET /health` desde la URL pública:
+
+  ![Health](evidencia/WhatsApp_Image_2026-11-04_at_22_37_24_1.jpeg)
+
+### Autenticación y autorización (URL pública)
+- Registro de usuario (201 Created):
+
+  ![Registro](evidencia/WhatsApp_Image_2026-11-04_at_22_45_47_1.jpeg)
+
+- Login con credenciales válidas (200 con token):
+
+  ![Login](evidencia/WhatsApp_Image_2026-11-04_at_22_47_11_1.jpeg)
+
+- `/api/listas` sin token (401), desde Swagger y desde curl:
+
+  ![401 Swagger](evidencia/WhatsApp_Image_2026-11-04_at_22_44_34_1.jpeg)
+  ![401 curl](evidencia/WhatsApp_Image_2026-11-04_at_22_55_26_1.jpeg)
+
+- `/api/listas` con token válido (200):
+
+  ![200 con token](evidencia/WhatsApp_Image_2026-11-04_at_22_54_49_1.jpeg)
+
+### Integración continua
+- CI en rojo (test roto a propósito):
+
+  ![CI rojo](evidencia/WhatsApp_Image_2026-11-05_at_00_41_04.jpeg)
+
+- CI en verde tras el arreglo:
+
+  ![CI verde](evidencia/WhatsApp_Image_2026-11-05_at_00_43_36.jpeg)
+
+## 📝 Decisiones de diseño del TP2
+
+### 1. Puertos y Adaptadores (por qué el Service/Controller no se tocaron)
+
+Durante la migración de memoria a base de datos, solo se modificaron las clases de infraestructura (repositorios JPA y Entities) y se creó un nuevo `FavoritoRepositoryAdapter`. Las clases de dominio, el `FavoritoService` y el `FavoritoController` no cambiaron en su lógica principal (salvo el campo `listaId`). Esto fue posible gracias a la Arquitectura Hexagonal: el Service depende de un Puerto (la interfaz `FavoritoRepository`) y no de una tecnología específica. Al cambiar la implementación en memoria por PostgreSQL, se conectó un nuevo Adapter detrás de la misma interfaz, manteniendo el núcleo desacoplado de la infraestructura.
+
+### 2. Evolución del esquema (por qué no se edita V1 o V2)
+
+Para evolucionar el esquema (por ejemplo, hacer obligatorio `lista_id` en Favoritos) se creó la migración `V4__lista_id_obligatorio.sql` en lugar de editar V1, V2 o V3 ya aplicadas. Flyway registra el checksum de cada migración en `flyway_schema_history`; si se modificara un archivo ya aplicado, detectaría el conflicto y bloquearía el arranque, garantizando la inmutabilidad y consistencia del esquema en todos los entornos. Por el mismo motivo, el TP3 agrega `V5__create_usuarios.sql` y `V6__add_usuario_id_a_listas.sql` sin tocar las anteriores.
+
+### 3. Transacciones y propiedades ACID
+
+En `POST /api/listas/{origenId}/mover-favoritos` se usa `@Transactional`. Sin ella, si los favoritos se reasignan pero falla el borrado de la lista original, la base quedaría inconsistente. La transacción garantiza la Atomicidad (la "A" de ACID): o se ejecutan todas las escrituras, o se revierte todo el bloque.
+
+## 📸 Evidencias del TP2 (Swagger)
+
+- Éxito al crear favorito (201 Created):
+
+  ![Crear Favorito](evidencia/captura-201.png)
+
+- Error 409 al borrar lista con favoritos:
+
+  ![Error 409](evidencia/captura-409.png)
+
+- Éxito al mover favoritos y borrar lista (204 No Content):
+
+  ![Mover y Borrar](evidencia/captura-204.png)
